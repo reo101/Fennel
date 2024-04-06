@@ -117,6 +117,31 @@
     (t.= (. ast 2 2 :line) 4)
     (t.= (. ast 2 3 :line) 4)))
 
+(fn test-discards []
+  (let [code "[1 #_ {:a :b} 3 #_ #_ (+ 4 5) 6 7 #_]"
+        (ok? ast) ((fennel.parser code))]
+    (t.is ok?)
+    (t.= [1 3 7] ast))
+  (let [parser (fennel.parser "#_ 1 2")
+        (ok? ast) (parser)]
+    (t.is ok?)
+    (t.= 2 ast))
+  (let [parser (fennel.parser "#_ #_ 1 2 3")
+        (ok? ast) (parser)]
+    (t.is ok?)
+    (t.= 3 ast))
+  (let [parser (fennel.parser "1 #_")
+        (ok? ast) (parser)
+        (ok2? ast2) (parser)]
+    (t.is ok?)
+    (t.= 1 ast)
+    (t.is (not ok2?))
+    (t.= nil ast2))
+  ;; `#_` should ignore comments and apply to the next form.
+  (let [forms (icollect [_ x (fennel.parser "#_ ; hi\n1 2" "-" {:comments true})]
+                (if (utils.comment? x) (tostring x) x))]
+    (t.= ["; hi" 2] forms)))
+
 (fn line-col [{: line : col}] [line col])
 
 (fn test-source-meta []
@@ -175,6 +200,7 @@
  : test-control-codes
  : test-comments
  : test-prefixes
+ : test-discards
  : test-source-meta
  : test-escapes
  : test-plugin-hooks}
