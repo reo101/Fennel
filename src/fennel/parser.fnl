@@ -68,9 +68,39 @@ Also returns a second function to clear the buffer in the byte stream."
                 "\\" "\\" "\"" "\"" "'" "'" "\n" "\n"})
 
 (fn parser-fn [getbyte filename {: source : unfriendly : comments &as options}]
-  (var stack []) ; stack of unfinished values
+  ;; Stack of unfinished values
+  (var stack [])
+
   ;; Provide one character buffer and keep track of current line and byte index
-  (var (line byteindex col prev-col lastb) (values 1 0 0 0 nil))
+  (var (line byteindex col prev-col lastb)
+       (values 1 0 0 0 nil))
+
+  ;; Keep track of depth and remaining discards
+  (var (depth discards)
+       (values 1 {1 0}))
+
+  (fn depth+ []
+    (set depth (+ depth 1))
+    (tset discards depth 0))
+
+  (fn depth- []
+    ;; Ignore "trailing" discards
+    (tset discards depth 0)
+    (set depth (- depth 1)))
+
+  (fn maybe-discard [v]
+    (when (and (> (. discards depth) 0)
+               ;; Keep comments visible when parsing with `:comments true`
+               ;; Discarding should only apply to the next form, not whitespace/comments
+               (not (utils.comment? v)))
+      (tset discards depth (- (. discards depth) 1))
+      true))
+
+  ;; Discard if needed, table.insert otherwise
+  (fn maybe-insert [t v]
+    (if (maybe-discard v)
+        nil
+        (table.insert t v)))
 
   (fn ungetb [ub]
     (when (char-starter? ub)
@@ -126,11 +156,12 @@ Also returns a second function to clear the buffer in the byte stream."
                 hookv hookv
                 _ v)]
         (case (. stack (length stack))
-          nil (set (retval done?) (values v true))
+          nil (when (not (maybe-discard v))
+                (set (retval done?) (values v true)))
           {: prefix} (let [source (doto (table.remove stack) set-source-fields)
                            list (utils.list (utils.sym prefix source) v)]
                        (dispatch (utils.copy source list)))
-          top (table.insert top v))))
+          top (maybe-insert top v))))
 
     (fn badend []
       "Throw nice error when we expect more characters but reach end of stream."
@@ -162,6 +193,7 @@ Also returns a second function to clear the buffer in the byte stream."
                                        {: line : filename})))))
 
     (fn open-table [b]
+      (depth+)
       (when (not whitespace-since-dispatch)
         (parse-error (.. "expected whitespace before opening delimiter "
                          (string.char b))))
@@ -235,6 +267,7 @@ Also returns a second function to clear the buffer in the byte stream."
         (dispatch val)))
 
     (fn close-table [b]
+      (depth-)
       (let [top (table.remove stack)]
         (when (= top nil)
           (parse-error (.. "unexpected closing delimiter " (string.char b))))
@@ -344,17 +377,35 @@ Also returns a second function to clear the buffer in the byte stream."
 
     (fn parse-prefix [b]
       "expand prefix byte into wrapping form eg. '`a' into '(quote a)'"
-      (table.insert stack {:prefix (. prefixes b) : filename : line
-                           :bytestart byteindex :col (- col 1)})
-      (let [nextb (getb)
-            trailing-whitespace? (or (whitespace? nextb) (= true (. delims nextb)))]
-        (when (and trailing-whitespace? (not= b 35))
-          (parse-error "invalid whitespace after quoting prefix"))
-        (ungetb nextb)
-        (when (and trailing-whitespace? (= b 35))
-          (let [source (table.remove stack)]
+      (let [source {:prefix (. prefixes b) : filename : line
+                    :bytestart byteindex :col (- col 1)}
+            ;; NOTE: has to be after `source` creation
+            nextb (getb)
+            discard? (and (= b 35) (= nextb 95))
+            trailing-or-whitespace? (or (whitespace? nextb)
+                                        (= true (. delims nextb)))
+            two-character-prefix? (or discard?)
+            _ (when (not two-character-prefix?)
+                (ungetb nextb))]
+
+        (if
+          ;; Interpret `#_` as a discard
+          discard?
+          (tset discards depth (+ (. discards depth) 1))
+
+          ;; Interpret `#` as the length special form
+          (and trailing-or-whitespace? (= b 35))
+          (do
             (set-source-fields source)
-            (dispatch (utils.sym "#" source))))))
+            (dispatch (utils.sym "#" source)))
+
+          ;; Other prefixes need a form to operate on
+          (and trailing-or-whitespace? (not= b 35))
+          (parse-error "invalid whitespace after quoting prefix")
+
+          ;; Normal prefix
+          (not trailing-or-whitespace?)
+          (table.insert stack source))))
 
     (fn parse-sym-loop [chars b]
       (if (and b (sym-char? b))
