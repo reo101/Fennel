@@ -12,6 +12,7 @@ deprecated forms.
 
 * Macros (and specials) can now also be implemented as callable tables,
   allowing the introduction of new built-ins without scope conflicts
+* Add support for discarding (Clojure's `#_`).
 
 ## 1.6.1 / 2025-12-30
 
