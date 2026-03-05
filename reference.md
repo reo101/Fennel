@@ -111,6 +111,12 @@ them in `(comment (ignored-things) (go-here))` which will be compiled
 into a nil rather than ignored entirely. The forms will appear in
 comments in the Lua code emitted by the compiler.
 
+Expressions (literals and tables) can be ignored by the parser if preceded by `#_` (like in Clojure):
+
+* `[1 #_ {:a :b} 3 #_ #_ (+ 4 5) 6 7 #_]` expands to `[1 3 7]`
+
+`#_`s stack, work at top-level, and also don't leak out after the end of the containing table
+
 ## Functions
 
 ### `fn` function

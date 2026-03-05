@@ -22,6 +22,7 @@ package manager or download a script build instead.
 * Support signed and unsigned 64-bit integer literals on LuaJIT via
   `LL` and `ULL` suffixes.
 * Support `:initial-indent` option in `fennel.view`.
+* Add support for discarding (Clojure's `#_`).
 
 ### Bug Fixes
 
