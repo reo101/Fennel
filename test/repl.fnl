@@ -521,7 +521,7 @@
   (let [out []
         in ["(do (fn a [] (error :whoa) nil)
                  (fn b [] (a) nil)
-                 (b))"]
+                 (b) nil)"]
         old-write io.write]
     ;; this relies on the default onError setting, so we can't use wrap-repl;
     ;; have to override io.write instead. saving locals clutters the trace too.
