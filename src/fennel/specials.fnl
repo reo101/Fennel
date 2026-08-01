@@ -1216,11 +1216,11 @@ Only works in Lua 5.3+ or LuaJIT with the --use-bit-lib flag.")
                                                    base)))
              :get-scope (fn []
                           compiler.scopes.macro)
-             :in-scope? (fn [symbol]
+             :in-scope? (fn [sym]
                           (compiler.assert compiler.scopes.macro
                                            "must call from macro" ?ast)
-                          (. compiler.scopes.macro.manglings
-                             (tostring symbol)))
+                          (and (. compiler.scopes.macro.manglings (tostring sym))
+                               sym))
              :macroexpand (fn [form]
                             (compiler.assert compiler.scopes.macro
                                              "must call from macro" ?ast)
