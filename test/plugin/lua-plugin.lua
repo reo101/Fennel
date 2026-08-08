@@ -2,7 +2,7 @@
 local fennel = require('fennel')
 
 local function inscope(s)
-    return _G['in-scope?'](s)
+    return tostring(_G['in-scope?'](s))
 end
 
 local rootScope = fennel.scope()
