@@ -631,12 +631,9 @@ current directory by default.
 
 ## Relative require
 
-There are several ways to write a library which uses modules.  One of
-these is to rely on something like LuaRocks, to manage library
-installation and availability of it and its modules.  Another way is
-to use the relative require style for loading nested modules.  With
-relative require, libraries don't depend on the root directory name or
-its location when resolving inner module paths.
+With relative require, libraries don't depend on the root directory name
+or location when resolving inner module paths and can be relocated to a
+subdirectory without breaking.
 
 For example, here's a small `example` library, which contains an
 `init.fnl` file, and a module at the root directory:
@@ -675,19 +672,10 @@ is now the correct module path:
       [C]: in function 'require'
       ./libs/example/init.fnl:2: in main chunk
 
-LuaRocks addresses this problem by enforcing both the directory name
-and installation path, populating the `LUA_PATH` environment variable
-to make the library available.  This, of course, can be done manually
-by setting `LUA_PATH` per project in the build pipeline, pointing it
-to the right directory.  But this is not very transparent, and when
-requiring a project local library it's better to see the full path,
-that directly maps to the project's file structure, rather than
-looking up where the `LUA_PATH` is modified.
-
-In the Fennel ecosystem we encourage a simpler way of managing project
-dependencies.  Simply dropping a library into your project's tree or
-using git submodule is usually enough, and the require paths should be
-handled by the library itself.
+Your library's users can solve this by each individually setting
+`package.path` or `fennel.path` accordingly, but this gets awkward if
+they have a lot of libraries. It's much more convenient if the library
+naturally tolerates being relocated.
 
 Here's how a relative require path can be specified in the
 `libs/example/init.fnl` to make it name/path agnostic, assuming that

@@ -43,17 +43,13 @@ transducers, and additional data structures, like sets and lazy lists.
 
 In Clojure, it's typical to bring in libraries using a tool like
 [Leiningen][5] or [deps and Clojure CLI][6]. In Fennel, you can use
-[LuaRocks][7] for dependencies, but it's often
-overkill. Alternatively, you can use a fennel-tailored dependency
-manager [deps.fnl][8]. The `deps.fnl` format should be familiar if
-you've used `deps.edn` in Clojure.
-
-Usually, it's safe to just check your dependencies in your source
-repository. Deep dependency trees are very rare in Fennel and
-Lua. Even tho Lua's standard library is very small, adding a single
-file for a 3rd-party library into your repo is very cheap. Checking a
-jar into a git repository in Clojure is strongly discouraged (for good
-reasons) but those reasons usually don't apply to Lua libraries.
+[deps.fnl][8], but usually it's fine to just check your dependencies
+in your source repository. Deep dependency trees are very rare in
+Fennel and Lua. Even tho Lua's standard library is very small, adding
+a single file for a 3rd-party library into your repo is very
+cheap. Checking a jar into a git repository in Clojure is strongly
+discouraged (for good reasons) but those reasons usually don't apply
+to Lua libraries.
 
 Deploying Clojure usually means creating an uberjar that you launch
 using an existing JVM installation because the JVM is a pretty large
@@ -502,7 +498,6 @@ forms.
 [4]: https://gitlab.com/andreyorst/fennel-cljlib
 [5]: https://leiningen.org
 [6]: https://clojure.org/reference/deps_and_cli
-[7]: https://luarocks.org
 [8]: https://gitlab.com/andreyorst/deps.fnl
 [9]: https://www.lua.org/manual/5.4/manual.html#2.2
 [10]: https://p.hagelb.org/equal-rights-for-functional-objects.html

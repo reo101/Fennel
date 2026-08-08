@@ -222,7 +222,7 @@ If ~/.fennelrc exists, it will be loaded before launching a REPL.")
     (when (not= false options.fennelrc)
       (set options.fennelrc load-initfile))
     (when (and (not readline?) (not= "dumb" (os.getenv "TERM")))
-      (table.insert welcome (.. "Try installing readline via luarocks for a "
+      (table.insert welcome (.. "Try installing readline.lua for a "
                                 "better repl experience.")))
     (set options.message (table.concat welcome "\n"))
     (fennel.repl options)))
