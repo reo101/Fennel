@@ -33,10 +33,10 @@ test: fennel.lua fennel test/faith.lua
 
 testall: export FNL_TESTALL=yes
 testall: fennel test/faith.lua # recursive make considered not really a big deal
-	$(MAKE) test LUA=lua5.1
-	$(MAKE) test LUA=lua5.2
-	$(MAKE) test LUA=lua5.3
-	$(MAKE) test LUA=lua5.4
+	$(MAKE) test LUA=$(shell command -v lua5.1 || command -v lua51)
+	$(MAKE) test LUA=$(shell command -v lua5.2 || command -v lua52)
+	$(MAKE) test LUA=$(shell command -v lua5.3 || command -v lua53)
+	$(MAKE) test LUA=$(shell command -v lua5.4 || command -v lua54)
 	$(MAKE) test LUA=luajit
 
 fuzz: fennel ; $(MAKE) test TESTS=test.fuzz
@@ -134,17 +134,11 @@ $(BIN_LUA_DIR)/src/liblua-mingw.a: $(LUA_INCLUDE_DIR)
 MAN_DOCS := man/man1/fennel.1 man/man3/fennel-api.3 man/man5/fennel-reference.5\
 	    man/man7/fennel-tutorial.7
 
-# The empty line in maninst is necessary for it to emit distinct commands
-define maninst =
-mkdir -p $(dir $(2)) && cp $(1) $(2)
-
-endef
-
 install: fennel fennel.lua
 	mkdir -p $(DESTDIR)$(BIN_DIR) && cp fennel $(DESTDIR)$(BIN_DIR)/
 	mkdir -p $(DESTDIR)$(LUA_LIB_DIR) && cp fennel.lua $(DESTDIR)$(LUA_LIB_DIR)/
-	$(foreach doc,$(MAN_DOCS),\
-		$(call maninst,$(doc),$(DESTDIR)$(MAN_DIR)/$(doc)))
+	$(foreach doc,$(MAN_DOCS), mkdir -p $(dir $(DESTDIR)$(MAN_DIR)/$(doc));)
+	$(foreach doc,$(MAN_DOCS), cp $(doc) $(DESTDIR)$(MAN_DIR)/$(doc);)
 
 uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/fennel

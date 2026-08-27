@@ -7,11 +7,15 @@
 
 (local test-all? (os.getenv :FNL_TESTALL)) ; set by `make testall`
 
+(local dotless? (not (string.find (. arg -1) "5%.")))
+(local lua-versions (if dotless?
+                        [:lua51 :lua52 :lua53 :lua54 :luajit]
+                        [:lua5.1 :lua5.2 :lua5.3 :lua5.4 :luajit]))
+
 (local host-lua (let [long (case _VERSION
-                             "Lua 5.1" (if _G.jit :luajit :lua5.1)
+                             "Lua 5.1" (if _G.jit :luajit (. lua-versions 1))
                              _ (.. :lua (_VERSION:sub 5)))
-                      p (io.popen (.. long " -v"))]
-                  (p:read :*all)
+                      p (io.popen (.. long " -v") :w)]
                   (if (p:close)
                       long
                       (or (os.getenv "LUA") "lua"))))
@@ -35,18 +39,22 @@
     (t.= [true "1\tnil\t2\tnil\tnil"]
          [(peval (v (values 1 nil 2 nil nil)))])))
 
+(fn pick-lua [?i ?lua-v]
+  (if (= (host-lua:match "(lua.*)") ?lua-v)
+      ;; circular next
+      (. lua-versions (+ 1 (math.fmod ?i (length lua-versions))))
+      (pick-lua (next lua-versions ?i))))
+
 (fn test-lua-flag []
   ;; skip this when cli is not compiled or not running tests with `make testall`
   (when (and test-all? (file-exists? "fennel"))
     (let [;; running io.popen for all 20 combinations of lua versions is slow,
           ;; so we'll just pick the next one in the list after host-lua
-          lua-exec ((fn pick-lua [lua-vs ?i ?lua-v]
-                      (if (= host-lua ?lua-v)
-                          (. lua-vs (+ 1 (% ?i (# lua-vs)))) ; circular next
-                          (pick-lua lua-vs (next lua-vs ?i))))
-                    [:lua5.1 :lua5.2 :lua5.3 :lua5.4 :luajit])
+          lua-exec (pick-lua)
           run #(pick-values 2 (peval $ (: "--lua %q" :format lua-exec)))]
-      (t.= [true lua-exec]
+      (t.= [true (if dotless?
+                     (pick-values 1 (lua-exec:gsub "5" "5."))
+                     lua-exec)]
            [(run (v (case (_VERSION:sub 5)
                       :5.1 (if _G.jit :luajit :lua5.1)
                       v-num (.. :lua v-num))))]
