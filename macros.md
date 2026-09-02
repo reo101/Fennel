@@ -404,8 +404,13 @@ loaded in the **compiler environment**. This is how it has access to
 functions like `list`, `sym`, etc. For a full list of functions
 available, see the "Compiler Environment" section of [the reference][3].
 
+Macro modules should be named using the `.fnlm` extension, as third-party
+tooling such as the Fennel LSP can distinguish this file from a runtime module;
+however, the `.fnl` extension is still supported by `import-macros` for
+backwards-compatibility.
+
 ```fennel
-;; thrice.fnl
+;; thrice.fnlm
 (fn thrice-if [condition result]
   (fn step [i]
     (if (< 0 i)
